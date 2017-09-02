@@ -10,19 +10,7 @@ import (
 	"strings"
 )
 
-// Load CSV file into a sqlite database
-func main() {
-	// Read CSV file from disk and parse
-	file, err := os.Open("test.csv")
-	if err != nil {
-		log.Fatal(err)
-	}
-	r := csv.NewReader(file)
-	records, err := r.ReadAll()
-	if err != nil {
-		log.Fatal(err)
-	}
-
+func csvQuery(records [][]string) (result [][]string, err error) {
 	// Extract various info from CSV
 	headers := records[0]
 	headerString := strings.Join(headers, ", ")
@@ -39,7 +27,7 @@ func main() {
 	// Open an in-memory sqlite database
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
-		log.Fatal(err)
+		return result, err
 	}
 	defer db.Close()
 
@@ -48,19 +36,18 @@ func main() {
 	sqlStatement := fmt.Sprintf("create table test (%s)", headerString)
 	_, err = db.Exec(sqlStatement)
 	if err != nil {
-		log.Printf("%q: %s\n", err, sqlStatement)
-		return
+		return result, err
 	}
 
 	// Insert CSV data into sqlite db
 	tx, err := db.Begin()
 	if err != nil {
-		log.Fatal(err)
+		return result, err
 	}
 	sqlStatement = fmt.Sprintf("insert into test(%s) values(%s)", headerString, rowQuestionMarks)
 	stmt, err := tx.Prepare(sqlStatement)
 	if err != nil {
-		log.Fatal(err)
+		return result, err
 	}
 	defer stmt.Close()
 	for _, row := range csvRows {
@@ -70,7 +57,7 @@ func main() {
 		}
 		_, err = stmt.Exec(rowCopy...)
 		if err != nil {
-			log.Fatal(err)
+			return result, err
 		}
 	}
 	tx.Commit()
@@ -78,17 +65,17 @@ func main() {
 	// Get the data back out of the CSV
 	sqlRows, err := db.Query("select id, name from test")
 	if err != nil {
-		log.Fatal(err)
+		return result, err
 	}
 	defer sqlRows.Close()
 
 	// Dump the data back out to CSV
 	colNames, err := sqlRows.Columns()
 	if err != nil {
-		log.Fatal(err)
+		return result, err
 	}
-	writer := csv.NewWriter(os.Stdout)
-	writer.Write(colNames)
+	result = append(result, colNames)
+
 	readCols := make([]interface{}, len(colNames))
 	writeCols := make([]string, len(colNames))
 	for i, _ := range writeCols {
@@ -97,12 +84,37 @@ func main() {
 	for sqlRows.Next() {
 		err := sqlRows.Scan(readCols...)
 		if err != nil {
-			log.Fatal(err)
+			return result, err
 		}
-		writer.Write(writeCols)
+		result = append(result, writeCols)
 	}
 	if err = sqlRows.Err(); err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
+// Load CSV file into a sqlite database
+func main() {
+	// Read CSV file from disk and parse
+	file, err := os.Open("test.csv")
+	if err != nil {
 		log.Fatal(err)
+	}
+	r := csv.NewReader(file)
+	records, err := r.ReadAll()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	result, err := csvQuery(records)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	writer := csv.NewWriter(os.Stdout)
+	for _, row := range result {
+		writer.Write(row)
 	}
 	writer.Flush()
 }
