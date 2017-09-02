@@ -33,7 +33,6 @@ func csvQuery(tables map[string][][]string, query string) (result [][]string, er
 		rowQuestionMarks := strings.Join(questionMarks, ", ")
 
 		// Create a table for the CSV to live in
-		// TODO: Make table name configurable
 		sqlStatement := fmt.Sprintf("CREATE TABLE %s (%s)", tableName, headerString)
 		_, err = db.Exec(sqlStatement)
 		if err != nil {
