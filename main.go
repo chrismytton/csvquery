@@ -10,20 +10,7 @@ import (
 	"strings"
 )
 
-func csvQuery(records [][]string) (result [][]string, err error) {
-	// Extract various info from CSV
-	headers := records[0]
-	headerString := strings.Join(headers, ", ")
-	csvRows := records[1:]
-
-	// Create the correct number of placeholder question marks for using in the
-	// prepared statement.
-	questionMarks := make([]string, len(csvRows))
-	for i := 0; i < len(csvRows); i++ {
-		questionMarks[i] = "?"
-	}
-	rowQuestionMarks := strings.Join(questionMarks, ", ")
-
+func csvQuery(tables map[string][][]string, query string) (result [][]string, err error) {
 	// Open an in-memory sqlite database
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
@@ -31,39 +18,54 @@ func csvQuery(records [][]string) (result [][]string, err error) {
 	}
 	defer db.Close()
 
-	// Create a table for the CSV to live in
-	// TODO: Make table name configurable
-	sqlStatement := fmt.Sprintf("create table test (%s)", headerString)
-	_, err = db.Exec(sqlStatement)
-	if err != nil {
-		return result, err
-	}
+	for tableName, records := range tables {
+		// Extract various info from CSV
+		headers := records[0]
+		headerString := strings.Join(headers, ", ")
+		csvRows := records[1:]
 
-	// Insert CSV data into sqlite db
-	tx, err := db.Begin()
-	if err != nil {
-		return result, err
-	}
-	sqlStatement = fmt.Sprintf("insert into test(%s) values(%s)", headerString, rowQuestionMarks)
-	stmt, err := tx.Prepare(sqlStatement)
-	if err != nil {
-		return result, err
-	}
-	defer stmt.Close()
-	for _, row := range csvRows {
-		rowCopy := make([]interface{}, len(row))
-		for i, d := range row {
-			rowCopy[i] = d
+		// Create the correct number of placeholder question marks for using in the
+		// prepared statement.
+		questionMarks := make([]string, len(csvRows))
+		for i := 0; i < len(csvRows); i++ {
+			questionMarks[i] = "?"
 		}
-		_, err = stmt.Exec(rowCopy...)
+		rowQuestionMarks := strings.Join(questionMarks, ", ")
+
+		// Create a table for the CSV to live in
+		// TODO: Make table name configurable
+		sqlStatement := fmt.Sprintf("CREATE TABLE %s (%s)", tableName, headerString)
+		_, err = db.Exec(sqlStatement)
 		if err != nil {
 			return result, err
 		}
+
+		// Insert CSV data into sqlite db
+		tx, err := db.Begin()
+		if err != nil {
+			return result, err
+		}
+		sqlStatement = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", tableName, headerString, rowQuestionMarks)
+		stmt, err := tx.Prepare(sqlStatement)
+		if err != nil {
+			return result, err
+		}
+		defer stmt.Close()
+		for _, row := range csvRows {
+			rowCopy := make([]interface{}, len(row))
+			for i, d := range row {
+				rowCopy[i] = d
+			}
+			_, err = stmt.Exec(rowCopy...)
+			if err != nil {
+				return result, err
+			}
+		}
+		tx.Commit()
 	}
-	tx.Commit()
 
 	// Get the data back out of the CSV
-	sqlRows, err := db.Query("select id, name from test")
+	sqlRows, err := db.Query(query)
 	if err != nil {
 		return result, err
 	}
@@ -86,7 +88,9 @@ func csvQuery(records [][]string) (result [][]string, err error) {
 		if err != nil {
 			return result, err
 		}
-		result = append(result, writeCols)
+		cols := make([]string, len(writeCols))
+		copy(cols, writeCols)
+		result = append(result, cols)
 	}
 	if err = sqlRows.Err(); err != nil {
 		return result, err
@@ -94,20 +98,36 @@ func csvQuery(records [][]string) (result [][]string, err error) {
 	return result, nil
 }
 
-// Load CSV file into a sqlite database
-func main() {
+func readCsv(fileName string) ([][]string, error) {
+	records := [][]string{}
 	// Read CSV file from disk and parse
-	file, err := os.Open("test.csv")
+	file, err := os.Open(fileName)
 	if err != nil {
-		log.Fatal(err)
+		return records, err
 	}
 	r := csv.NewReader(file)
-	records, err := r.ReadAll()
+	records, err = r.ReadAll()
 	if err != nil {
-		log.Fatal(err)
+		return records, err
 	}
+	return records, nil
+}
 
-	result, err := csvQuery(records)
+// Load CSV file into a sqlite database
+func main() {
+	files := map[string]string{
+		"test": "test.csv",
+		"ages": "ages.csv",
+	}
+	tables := make(map[string][][]string)
+	for tableName, fileName := range files {
+		records, err := readCsv(fileName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		tables[tableName] = records
+	}
+	result, err := csvQuery(tables, "select id, name, age from test join ages on ages.person_id = test.id")
 	if err != nil {
 		log.Fatal(err)
 	}
