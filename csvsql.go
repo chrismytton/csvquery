@@ -1,22 +1,24 @@
-package main
+package csvsql
 
 import (
 	"database/sql"
-	"encoding/csv"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
-	"log"
-	"os"
 	"strings"
 )
 
-func csvQuery(tables map[string][][]string, query string) (result [][]string, err error) {
+type Database struct {
+	sqliteDb *sql.DB
+}
+
+func New(tables map[string][][]string) (*Database, error) {
+	csvdb := &Database{}
 	// Open an in-memory sqlite database
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
-		return result, err
+		return csvdb, err
 	}
-	defer db.Close()
+	csvdb.sqliteDb = db
 
 	for tableName, records := range tables {
 		// Extract various info from CSV
@@ -36,18 +38,18 @@ func csvQuery(tables map[string][][]string, query string) (result [][]string, er
 		sqlStatement := fmt.Sprintf("CREATE TABLE %s (%s)", tableName, headerString)
 		_, err = db.Exec(sqlStatement)
 		if err != nil {
-			return result, err
+			return csvdb, err
 		}
 
 		// Insert CSV data into sqlite db
 		tx, err := db.Begin()
 		if err != nil {
-			return result, err
+			return csvdb, err
 		}
 		sqlStatement = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", tableName, headerString, rowQuestionMarks)
 		stmt, err := tx.Prepare(sqlStatement)
 		if err != nil {
-			return result, err
+			return csvdb, err
 		}
 		defer stmt.Close()
 		for _, row := range csvRows {
@@ -57,14 +59,22 @@ func csvQuery(tables map[string][][]string, query string) (result [][]string, er
 			}
 			_, err = stmt.Exec(rowCopy...)
 			if err != nil {
-				return result, err
+				return csvdb, err
 			}
 		}
 		tx.Commit()
 	}
 
+	return csvdb, nil
+}
+
+func (d *Database) Close() {
+	d.sqliteDb.Close()
+}
+
+func (d *Database) Query(query string) (result [][]string, err error) {
 	// Get the data back out of the CSV
-	sqlRows, err := db.Query(query)
+	sqlRows, err := d.sqliteDb.Query(query)
 	if err != nil {
 		return result, err
 	}
@@ -95,45 +105,4 @@ func csvQuery(tables map[string][][]string, query string) (result [][]string, er
 		return result, err
 	}
 	return result, nil
-}
-
-func readCsv(fileName string) ([][]string, error) {
-	records := [][]string{}
-	// Read CSV file from disk and parse
-	file, err := os.Open(fileName)
-	if err != nil {
-		return records, err
-	}
-	r := csv.NewReader(file)
-	records, err = r.ReadAll()
-	if err != nil {
-		return records, err
-	}
-	return records, nil
-}
-
-// Load CSV file into a sqlite database
-func main() {
-	files := map[string]string{
-		"test": "test.csv",
-		"ages": "ages.csv",
-	}
-	tables := make(map[string][][]string)
-	for tableName, fileName := range files {
-		records, err := readCsv(fileName)
-		if err != nil {
-			log.Fatal(err)
-		}
-		tables[tableName] = records
-	}
-	result, err := csvQuery(tables, "select id, name, age from test join ages on ages.person_id = test.id")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	writer := csv.NewWriter(os.Stdout)
-	for _, row := range result {
-		writer.Write(row)
-	}
-	writer.Flush()
 }
