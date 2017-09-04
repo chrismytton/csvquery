@@ -24,12 +24,12 @@ func (c *CSVTable) headers() []string {
 	return c.rows[0]
 }
 
-type Database struct {
+type CSVDatabase struct {
 	sqliteDb *sql.DB
 }
 
-func New(tables map[string][][]string) (*Database, error) {
-	csvdb := &Database{}
+func New(tables map[string][][]string) (*CSVDatabase, error) {
+	csvdb := &CSVDatabase{}
 	// Open an in-memory sqlite database
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
@@ -85,11 +85,11 @@ func New(tables map[string][][]string) (*Database, error) {
 	return csvdb, nil
 }
 
-func (d *Database) Close() {
+func (d *CSVDatabase) Close() {
 	d.sqliteDb.Close()
 }
 
-func (d *Database) Query(query string) (result [][]string, err error) {
+func (d *CSVDatabase) Query(query string) (result [][]string, err error) {
 	// Get the data back out of the CSV
 	sqlRows, err := d.sqliteDb.Query(query)
 	if err != nil {
