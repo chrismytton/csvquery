@@ -1,8 +1,6 @@
 package csvsql
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestCSVTableCreateStatement(t *testing.T) {
 	cases := []struct {
