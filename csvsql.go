@@ -7,6 +7,23 @@ import (
 	"strings"
 )
 
+type CSVTable struct {
+	name string
+	rows [][]string
+}
+
+func (c *CSVTable) CreateStatement() string {
+	return fmt.Sprintf("CREATE TABLE %s (%s)", c.name, c.headerString())
+}
+
+func (c *CSVTable) headerString() string {
+	return strings.Join(c.headers(), ", ")
+}
+
+func (c *CSVTable) headers() []string {
+	return c.rows[0]
+}
+
 type Database struct {
 	sqliteDb *sql.DB
 }
