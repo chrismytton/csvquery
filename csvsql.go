@@ -7,23 +7,6 @@ import (
 	"strings"
 )
 
-type CSVTable struct {
-	name string
-	rows [][]string
-}
-
-func (c *CSVTable) CreateStatement() string {
-	return fmt.Sprintf("CREATE TABLE %s (%s)", c.name, c.headerString())
-}
-
-func (c *CSVTable) headerString() string {
-	return strings.Join(c.headers(), ", ")
-}
-
-func (c *CSVTable) headers() []string {
-	return c.rows[0]
-}
-
 type CSVDatabase struct {
 	sqliteDb *sql.DB
 }
@@ -40,22 +23,8 @@ func New() (c *CSVDatabase, err error) {
 }
 
 func (c *CSVDatabase) Insert(tableName string, records [][]string) (err error) {
-	// Extract various info from CSV
-	headers := records[0]
-	headerString := strings.Join(headers, ", ")
-	csvRows := records[1:]
-
-	// Create the correct number of placeholder question marks for using in the
-	// prepared statement.
-	questionMarks := make([]string, len(csvRows))
-	for i := 0; i < len(csvRows); i++ {
-		questionMarks[i] = "?"
-	}
-	rowQuestionMarks := strings.Join(questionMarks, ", ")
-
-	// Create a table for the CSV to live in
-	sqlStatement := fmt.Sprintf("CREATE TABLE %s (%s)", tableName, headerString)
-	_, err = c.sqliteDb.Exec(sqlStatement)
+	table := &CSVTable{tableName, records}
+	_, err = c.sqliteDb.Exec(table.CreateStatement())
 	if err != nil {
 		return
 	}
@@ -65,13 +34,12 @@ func (c *CSVDatabase) Insert(tableName string, records [][]string) (err error) {
 	if err != nil {
 		return
 	}
-	sqlStatement = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", tableName, headerString, rowQuestionMarks)
-	stmt, err := tx.Prepare(sqlStatement)
+	stmt, err := tx.Prepare(table.InsertStatement())
 	if err != nil {
 		return
 	}
 	defer stmt.Close()
-	for _, row := range csvRows {
+	for _, row := range table.rows() {
 		// Turn row into a slice of interface{}
 		rowCopy := make([]interface{}, len(row))
 		for i, d := range row {
@@ -94,14 +62,14 @@ func (c *CSVDatabase) Query(query string) (result [][]string, err error) {
 	// Get the data back out of the CSV
 	sqlRows, err := c.sqliteDb.Query(query)
 	if err != nil {
-		return result, err
+		return
 	}
 	defer sqlRows.Close()
 
 	// Dump the data back out to CSV
 	colNames, err := sqlRows.Columns()
 	if err != nil {
-		return result, err
+		return
 	}
 	result = append(result, colNames)
 
@@ -111,16 +79,51 @@ func (c *CSVDatabase) Query(query string) (result [][]string, err error) {
 		readCols[i] = &writeCols[i]
 	}
 	for sqlRows.Next() {
-		err := sqlRows.Scan(readCols...)
+		err = sqlRows.Scan(readCols...)
 		if err != nil {
-			return result, err
+			return
 		}
 		cols := make([]string, len(writeCols))
 		copy(cols, writeCols)
 		result = append(result, cols)
 	}
 	if err = sqlRows.Err(); err != nil {
-		return result, err
+		return
 	}
-	return result, nil
+	return
+}
+
+type CSVTable struct {
+	name    string
+	records [][]string
+}
+
+func (c *CSVTable) CreateStatement() string {
+	return fmt.Sprintf("CREATE TABLE %s (%s)", c.name, c.headerString())
+}
+
+func (c *CSVTable) InsertStatement() string {
+	return fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", c.name, c.headerString(), c.rowQuestionMarks())
+}
+
+func (c *CSVTable) headerString() string {
+	return strings.Join(c.headers(), ", ")
+}
+
+func (c *CSVTable) headers() []string {
+	return c.records[0]
+}
+
+func (c *CSVTable) rows() [][]string {
+	return c.records[1:]
+}
+
+func (c *CSVTable) rowQuestionMarks() string {
+	// Create the correct number of placeholder question marks for using in the
+	// prepared statement.
+	questionMarks := make([]string, len(c.headers()))
+	for i := 0; i < len(questionMarks); i++ {
+		questionMarks[i] = "?"
+	}
+	return strings.Join(questionMarks, ", ")
 }
