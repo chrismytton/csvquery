@@ -7,10 +7,12 @@ import (
 	"strings"
 )
 
+// CSVDatabase represents a query-able CSV backed database.
 type CSVDatabase struct {
 	sqliteDb *sql.DB
 }
 
+// New returns a *CSVDatabase.
 func New() (c *CSVDatabase, err error) {
 	c = &CSVDatabase{}
 	// Open an in-memory sqlite database
@@ -22,6 +24,7 @@ func New() (c *CSVDatabase, err error) {
 	return
 }
 
+// Insert populates the given table with the CSV records provided.
 func (c *CSVDatabase) Insert(tableName string, records [][]string) (err error) {
 	table := &CSVTable{tableName, records}
 	_, err = c.sqliteDb.Exec(table.CreateStatement())
@@ -54,19 +57,19 @@ func (c *CSVDatabase) Insert(tableName string, records [][]string) (err error) {
 	return
 }
 
+// Close the underlying SQLite database.
 func (c *CSVDatabase) Close() {
 	c.sqliteDb.Close()
 }
 
+// Query takes a string of SQL and runs it against the current database, returning the result.
 func (c *CSVDatabase) Query(query string) (result [][]string, err error) {
-	// Get the data back out of the CSV
 	sqlRows, err := c.sqliteDb.Query(query)
 	if err != nil {
 		return
 	}
 	defer sqlRows.Close()
 
-	// Dump the data back out to CSV
 	colNames, err := sqlRows.Columns()
 	if err != nil {
 		return
