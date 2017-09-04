@@ -28,70 +28,71 @@ type CSVDatabase struct {
 	sqliteDb *sql.DB
 }
 
-func New(tables map[string][][]string) (*CSVDatabase, error) {
-	csvdb := &CSVDatabase{}
+func New() (c *CSVDatabase, err error) {
+	c = &CSVDatabase{}
 	// Open an in-memory sqlite database
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
-		return csvdb, err
+		return
 	}
-	csvdb.sqliteDb = db
-
-	for tableName, records := range tables {
-		// Extract various info from CSV
-		headers := records[0]
-		headerString := strings.Join(headers, ", ")
-		csvRows := records[1:]
-
-		// Create the correct number of placeholder question marks for using in the
-		// prepared statement.
-		questionMarks := make([]string, len(csvRows))
-		for i := 0; i < len(csvRows); i++ {
-			questionMarks[i] = "?"
-		}
-		rowQuestionMarks := strings.Join(questionMarks, ", ")
-
-		// Create a table for the CSV to live in
-		sqlStatement := fmt.Sprintf("CREATE TABLE %s (%s)", tableName, headerString)
-		_, err = db.Exec(sqlStatement)
-		if err != nil {
-			return csvdb, err
-		}
-
-		// Insert CSV data into sqlite db
-		tx, err := db.Begin()
-		if err != nil {
-			return csvdb, err
-		}
-		sqlStatement = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", tableName, headerString, rowQuestionMarks)
-		stmt, err := tx.Prepare(sqlStatement)
-		if err != nil {
-			return csvdb, err
-		}
-		defer stmt.Close()
-		for _, row := range csvRows {
-			rowCopy := make([]interface{}, len(row))
-			for i, d := range row {
-				rowCopy[i] = d
-			}
-			_, err = stmt.Exec(rowCopy...)
-			if err != nil {
-				return csvdb, err
-			}
-		}
-		tx.Commit()
-	}
-
-	return csvdb, nil
+	c.sqliteDb = db
+	return
 }
 
-func (d *CSVDatabase) Close() {
-	d.sqliteDb.Close()
+func (c *CSVDatabase) Insert(tableName string, records [][]string) (err error) {
+	// Extract various info from CSV
+	headers := records[0]
+	headerString := strings.Join(headers, ", ")
+	csvRows := records[1:]
+
+	// Create the correct number of placeholder question marks for using in the
+	// prepared statement.
+	questionMarks := make([]string, len(csvRows))
+	for i := 0; i < len(csvRows); i++ {
+		questionMarks[i] = "?"
+	}
+	rowQuestionMarks := strings.Join(questionMarks, ", ")
+
+	// Create a table for the CSV to live in
+	sqlStatement := fmt.Sprintf("CREATE TABLE %s (%s)", tableName, headerString)
+	_, err = c.sqliteDb.Exec(sqlStatement)
+	if err != nil {
+		return
+	}
+
+	// Insert CSV data into sqlite db
+	tx, err := c.sqliteDb.Begin()
+	if err != nil {
+		return
+	}
+	sqlStatement = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", tableName, headerString, rowQuestionMarks)
+	stmt, err := tx.Prepare(sqlStatement)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+	for _, row := range csvRows {
+		// Turn row into a slice of interface{}
+		rowCopy := make([]interface{}, len(row))
+		for i, d := range row {
+			rowCopy[i] = d
+		}
+		_, err = stmt.Exec(rowCopy...)
+		if err != nil {
+			return
+		}
+	}
+	tx.Commit()
+	return
 }
 
-func (d *CSVDatabase) Query(query string) (result [][]string, err error) {
+func (c *CSVDatabase) Close() {
+	c.sqliteDb.Close()
+}
+
+func (c *CSVDatabase) Query(query string) (result [][]string, err error) {
 	// Get the data back out of the CSV
-	sqlRows, err := d.sqliteDb.Query(query)
+	sqlRows, err := c.sqliteDb.Query(query)
 	if err != nil {
 		return result, err
 	}

@@ -36,11 +36,18 @@ func main() {
 		}
 		tables[tableName] = records
 	}
-	q, err := csvsql.New(tables)
+	q, err := csvsql.New()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer q.Close()
+
+	for tableName, rows := range tables {
+		err := q.Insert(tableName, rows)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 
 	result, err := q.Query("select id, name, age from test join ages on ages.person_id = test.id")
 	if err != nil {
