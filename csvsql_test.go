@@ -23,12 +23,12 @@ func TestCSVTableCreateStatement(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		table := &CSVTable{c.tableName, c.records}
-		got := table.CreateStatement()
+		table := &csvTable{c.tableName, c.records}
+		got := table.createStatement()
 		if got != c.createStatement {
 			t.Errorf("CreateStatement(%q, %q) == %q, want %q", c.tableName, c.records, got, c.createStatement)
 		}
-		got = table.InsertStatement()
+		got = table.insertStatement()
 		if got != c.insertStatement {
 			t.Errorf("InsertStatement(%q, %q) == %q, want %q", c.tableName, c.records, got, c.insertStatement)
 		}
