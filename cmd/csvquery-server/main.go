@@ -1,0 +1,61 @@
+package main
+
+import (
+	"encoding/csv"
+	"fmt"
+	"github.com/chrismytton/csvquery"
+	"log"
+	"net/http"
+	"strings"
+)
+
+func requestHandler(w http.ResponseWriter, r *http.Request) {
+	queryString := r.URL.Query()
+	tables := queryString["table"]
+	query := queryString["query"][0]
+	fmt.Println(tables)
+	fmt.Println(query)
+	q, err := csvquery.New()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer q.Close()
+
+	for _, tableSpec := range tables {
+		parts := strings.SplitN(tableSpec, ":", 2)
+		tableName := parts[0]
+		csvUrl := parts[1]
+		fmt.Println(tableName)
+		fmt.Println(csvUrl)
+		resp, err := http.Get(csvUrl)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer resp.Body.Close()
+		r := csv.NewReader(resp.Body)
+		records, err := r.ReadAll()
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = q.Insert(tableName, records)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	result, err := q.Query(query)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	writer := csv.NewWriter(w)
+	for _, row := range result {
+		writer.Write(row)
+	}
+	writer.Flush()
+}
+
+func main() {
+	http.HandleFunc("/", requestHandler)
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
