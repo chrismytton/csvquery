@@ -102,11 +102,11 @@ type csvTable struct {
 }
 
 func (c *csvTable) createStatement() string {
-	return fmt.Sprintf("CREATE TABLE %s (%s)", c.name, c.headerString())
+	return fmt.Sprintf("CREATE TABLE '%s' (%s)", c.name, c.headerString())
 }
 
 func (c *csvTable) insertStatement() string {
-	return fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", c.name, c.headerString(), c.rowQuestionMarks())
+	return fmt.Sprintf("INSERT INTO '%s' (%s) VALUES (%s)", c.name, c.headerString(), c.rowQuestionMarks())
 }
 
 func (c *csvTable) headerString() string {
