@@ -4,7 +4,7 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"github.com/chrismytton/csvsql"
+	"github.com/chrismytton/csvquery"
 	"log"
 	"os"
 	"strings"
@@ -55,7 +55,7 @@ func main() {
 		}
 		tables[tableName] = records
 	}
-	q, err := csvsql.New()
+	q, err := csvquery.New()
 	if err != nil {
 		log.Fatal(err)
 	}

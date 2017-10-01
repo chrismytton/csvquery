@@ -1,4 +1,4 @@
-package csvsql
+package csvquery
 
 import (
 	"reflect"

@@ -1,10 +1,10 @@
-# CSVSQL
+# CSV Query
 
 Query CSV files with SQL.
 
 ## Install
 
-    go get -u github.com/chrismytton/csvsql
+    go get -u github.com/chrismytton/csvquery
 
 ## Known limitations
 
