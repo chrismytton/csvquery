@@ -2,9 +2,12 @@ package main
 
 import (
 	"encoding/csv"
+	"flag"
+	"fmt"
 	"github.com/chrismytton/csvsql"
 	"log"
 	"os"
+	"strings"
 )
 
 func readCsv(fileName string) ([][]string, error) {
@@ -22,12 +25,28 @@ func readCsv(fileName string) ([][]string, error) {
 	return records, nil
 }
 
+type csvTableSpec map[string]string
+
+func (c *csvTableSpec) String() string {
+	return fmt.Sprint(*c)
+}
+
+func (c *csvTableSpec) Set(value string) error {
+	parts := strings.Split(value, ":")
+	table := parts[0]
+	file := parts[1]
+	(*c)[table] = file
+	return nil
+}
+
 // Load CSV file into a sqlite database
 func main() {
-	files := map[string]string{
-		"test": "test.csv",
-		"ages": "ages.csv",
-	}
+	var files = make(csvTableSpec)
+	var query string
+	flag.Var(&files, "table", "table to file mapping in the form tablename:file.csv")
+	flag.StringVar(&query, "query", "", "the SQL query to run against the given tables")
+	flag.Parse()
+
 	tables := make(map[string][][]string)
 	for tableName, fileName := range files {
 		records, err := readCsv(fileName)
@@ -49,7 +68,7 @@ func main() {
 		}
 	}
 
-	result, err := q.Query("select id, name, age from test join ages on ages.person_id = test.id")
+	result, err := q.Query(query)
 	if err != nil {
 		log.Fatal(err)
 	}
