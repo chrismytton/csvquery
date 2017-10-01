@@ -18,6 +18,12 @@ func TestCSVTableCreateStatement(t *testing.T) {
 			"SELECT * FROM test WHERE id = '1'",
 			[][]string{[]string{"id", "name"}, []string{"1", "Alice"}},
 		},
+		{
+			"function_test",
+			[][]string{[]string{"id", "name"}, []string{"1", "Alice"}, []string{"2", "Bob"}},
+			"SELECT UPPER(name) AS name FROM function_test",
+			[][]string{[]string{"name"}, []string{"ALICE"}, []string{"BOB"}},
+		},
 	}
 	for _, c := range cases {
 		q, err := New()
