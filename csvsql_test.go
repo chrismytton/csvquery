@@ -1,36 +1,40 @@
 package csvsql
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestCSVTableCreateStatement(t *testing.T) {
 	cases := []struct {
-		tableName       string
-		records         [][]string
-		createStatement string
-		insertStatement string
+		tableName string
+		records   [][]string
+		query     string
+		result    [][]string
 	}{
 		{
-			"test-headers-only",
-			[][]string{[]string{"id", "name"}},
-			"CREATE TABLE test-headers-only (id, name)",
-			"INSERT INTO test-headers-only (id, name) VALUES (?, ?)",
-		},
-		{
-			"test-names",
-			[][]string{[]string{"name"}, []string{"Alice"}, []string{"Bob"}},
-			"CREATE TABLE test-names (name)",
-			"INSERT INTO test-names (name) VALUES (?)",
+			"test",
+			[][]string{[]string{"id", "name"}, []string{"1", "Alice"}, []string{"2", "Bob"}},
+			"SELECT * FROM test WHERE id = '1'",
+			[][]string{[]string{"id", "name"}, []string{"1", "Alice"}},
 		},
 	}
 	for _, c := range cases {
-		table := &csvTable{c.tableName, c.records}
-		got := table.createStatement()
-		if got != c.createStatement {
-			t.Errorf("CreateStatement(%q, %q) == %q, want %q", c.tableName, c.records, got, c.createStatement)
+		q, err := New()
+		if err != nil {
+			t.Error(err)
 		}
-		got = table.insertStatement()
-		if got != c.insertStatement {
-			t.Errorf("InsertStatement(%q, %q) == %q, want %q", c.tableName, c.records, got, c.insertStatement)
+		defer q.Close()
+		err = q.Insert(c.tableName, c.records)
+		if err != nil {
+			t.Error(err)
+		}
+		got, err := q.Query(c.query)
+		if err != nil {
+			t.Error(err)
+		}
+		if !reflect.DeepEqual(got, c.result) {
+			t.Errorf("Query(%q) == %q, want %q", c.query, got, c.result)
 		}
 	}
 }
