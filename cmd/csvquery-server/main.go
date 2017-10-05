@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/csv"
-	"fmt"
 	"github.com/chrismytton/csvquery"
 	"log"
 	"net/http"
@@ -27,8 +26,6 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	tables := queryString["table"]
 	query := queryString["query"][0]
-	fmt.Println(tables)
-	fmt.Println(query)
 	q, err := csvquery.New()
 	if err != nil {
 		log.Fatal(err)
@@ -39,8 +36,6 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 		parts := strings.SplitN(tableSpec, ":", 2)
 		tableName := parts[0]
 		csvUrl := parts[1]
-		fmt.Println(tableName)
-		fmt.Println(csvUrl)
 		resp, err := http.Get(csvUrl)
 		if err != nil {
 			log.Fatal(err)
