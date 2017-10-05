@@ -10,7 +10,21 @@ import (
 )
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		return
+	}
+	log.Println(r.URL)
 	queryString := r.URL.Query()
+	if len(queryString["table"]) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("error\nPlease provide one or more 'table' parameters"))
+		return
+	}
+	if len(queryString["query"]) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("error\nPlease provide a 'query' parameter"))
+		return
+	}
 	tables := queryString["table"]
 	query := queryString["query"][0]
 	fmt.Println(tables)
