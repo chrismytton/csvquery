@@ -78,7 +78,7 @@ func (c *CSVDatabase) Query(query string) (result [][]string, err error) {
 
 	readCols := make([]interface{}, len(colNames))
 	writeCols := make([]string, len(colNames))
-	for i, _ := range writeCols {
+	for i := range writeCols {
 		readCols[i] = &writeCols[i]
 	}
 	for sqlRows.Next() {
