@@ -3,8 +3,10 @@ package csvquery
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"strings"
+
+	// This import is needed for sqlite3 support.
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // CSVDatabase represents a query-able CSV backed database.
