@@ -45,7 +45,7 @@ func (c *CSVDatabase) Insert(tableName string, records [][]string) (err error) {
 	}
 	defer stmt.Close()
 	for _, row := range table.rows() {
-		// Turn row into a slice of interface{}
+		// We need to turn row into a slice of interface{} so we can pass it to stmt.Exec
 		rowCopy := make([]interface{}, len(row))
 		for i, d := range row {
 			rowCopy[i] = d
