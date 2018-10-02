@@ -12,7 +12,7 @@ import (
 )
 
 func readCsv(fileName string) ([][]string, error) {
-	records := [][]string{}
+	var records [][]string
 	// Read CSV file from disk and parse
 	file, err := os.Open(fileName)
 	if err != nil {
