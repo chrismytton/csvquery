@@ -4,10 +4,11 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"github.com/chrismytton/csvquery"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/chrismytton/csvquery"
 )
 
 func readCsv(fileName string) ([][]string, error) {

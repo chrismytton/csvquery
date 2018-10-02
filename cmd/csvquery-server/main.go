@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/csv"
-	"github.com/chrismytton/csvquery"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/chrismytton/csvquery"
 )
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
