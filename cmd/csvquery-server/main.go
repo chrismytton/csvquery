@@ -36,8 +36,8 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	for _, tableSpec := range tables {
 		parts := strings.SplitN(tableSpec, ":", 2)
 		tableName := parts[0]
-		csvUrl := parts[1]
-		resp, err := http.Get(csvUrl)
+		csvURL := parts[1]
+		resp, err := http.Get(csvURL)
 		if err != nil {
 			log.Fatal(err)
 		}
