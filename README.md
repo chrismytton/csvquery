@@ -29,8 +29,14 @@ You can then query these two files like so:
     csvquery -table people:people.csv -table ages:ages.csv \
       -query 'select id,name,age from people join ages on ages.person_id = people.id'
 
-- `-table` - In the form `table_name:file.csv`. This can be specified multiple times to use multiple tables.
-- `-query` - The SQL query to run against the specified tables.
+Which should give you the following result:
+
+| id | name  | age |
+| -- | ----- | --- |
+| 1  | Alice | 20  |
+| 2  | Bob   | 30  |
+
+See `csvquery -help` for help.
 
 ## Server version
 
