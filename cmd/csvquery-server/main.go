@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/csv"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -55,7 +56,9 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 
 	result, err := q.Query(query)
 	if err != nil {
-		log.Fatal(err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("error\n%s\n", err)))
+		return
 	}
 
 	writer := csv.NewWriter(w)
