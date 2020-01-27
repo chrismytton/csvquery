@@ -1,3 +1,5 @@
+**WORK IN PROGRESS - there will be things that are broken or don't work**
+
 # CSV Query
 
 Query CSV files with SQL.
