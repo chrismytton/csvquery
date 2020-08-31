@@ -47,3 +47,11 @@ There is also a very experimental HTTP server, which you can install with the fo
     go get -u github.com/chrismytton/csvquery/cmd/csvquery-server
 
 This accepts one or more `?table` parameters, but instead of pointing to files they point to URLs, and then a `?query` parameter including the query. These parameters will need to be URL-encoded.
+
+## Compiling for Windows on macOS
+
+I had to do the following to get things cross compiling to Windows from macOS.
+
+    brew install mingw-w64
+
+    GOOS=windows GOARCH=386 CGO_ENABLED=1 CC=i686-w64-mingw32-gcc go build -v github.com/chrismytton/csvquery/cmd/csvquery
