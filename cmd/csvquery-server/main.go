@@ -33,7 +33,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 	}
 	queryString := r.URL.Query()
-	if len(queryString["table"]) == 0 {
+	if len(queryString["table[]"]) == 0 {
 		badRequest(w, "Please provide one or more 'table' parameters")
 		return
 	}
@@ -41,7 +41,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, "Please provide a 'query' parameters")
 		return
 	}
-	tables := queryString["table"]
+	tables := queryString["table[]"]
 	query := queryString["query"][0]
 	q, err := csvquery.New()
 	if err != nil {
