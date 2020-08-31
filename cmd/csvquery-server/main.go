@@ -28,6 +28,10 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Println(r.URL)
+	origin := r.Header.Get("Origin")
+	if origin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+	}
 	queryString := r.URL.Query()
 	if len(queryString["table"]) == 0 {
 		badRequest(w, "Please provide one or more 'table' parameters")
