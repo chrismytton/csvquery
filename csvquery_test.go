@@ -14,21 +14,21 @@ func TestCSVTableCreateStatement(t *testing.T) {
 	}{
 		{
 			"test",
-			[][]string{[]string{"id", "name"}, []string{"1", "Alice"}, []string{"2", "Bob"}},
+			[][]string{{"id", "name"}, {"1", "Alice"}, {"2", "Bob"}},
 			"SELECT * FROM test WHERE id = '1'",
-			[][]string{[]string{"id", "name"}, []string{"1", "Alice"}},
+			[][]string{{"id", "name"}, {"1", "Alice"}},
 		},
 		{
 			"function_test",
-			[][]string{[]string{"id", "name"}, []string{"1", "Alice"}, []string{"2", "Bob"}},
+			[][]string{{"id", "name"}, {"1", "Alice"}, {"2", "Bob"}},
 			"SELECT UPPER(name) AS name FROM function_test",
-			[][]string{[]string{"name"}, []string{"ALICE"}, []string{"BOB"}},
+			[][]string{{"name"}, {"ALICE"}, {"BOB"}},
 		},
 		{
 			"dashed-table-name",
-			[][]string{[]string{"id", "name"}, []string{"1", "Alice"}, []string{"2", "Bob"}},
+			[][]string{{"id", "name"}, {"1", "Alice"}, {"2", "Bob"}},
 			"SELECT id FROM 'dashed-table-name'",
-			[][]string{[]string{"id"}, []string{"1"}, []string{"2"}},
+			[][]string{{"id"}, {"1"}, {"2"}},
 		},
 	}
 	for _, c := range cases {
